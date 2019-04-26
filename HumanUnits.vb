@@ -74,7 +74,7 @@ Module HumanUnitManagement
         Next
     End Sub
 
-    <SystemCall("Generate human unit. Unit ID (.*). Unit name (.*).( System Control Authority [0-9]*)?(.)?( Object Control Authority [0-9]*)?(.)?")>
+    <SystemCall("Generate human unit. Unit ID (.*). Unit name (.*).( System Control Authority ([0-9]*))?(.)?( Object Control Authority ([0-9]*))?(.)?")>
     Public Sub AddHuman(ID As String, Name As String, Optional pm1 As String = "", Optional sca As String = "1", Optional dot1 As String = "", Optional pm2 As String = "", Optional oca As String = "1", Optional dot2 As String = "")
         Dim h As HumanUnit = New HumanUnit()
         h.UnitID = ID
