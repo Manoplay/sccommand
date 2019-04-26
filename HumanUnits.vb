@@ -1,6 +1,6 @@
 ﻿Imports System.DirectoryServices
 
-Module HumanUnits
+Module HumanUnitManagement
     <SystemCall("Kick player (.*)")>
     Public Sub KickPlayer(player As String)
         Dim id As HumanUnit = GUIDs(player)
