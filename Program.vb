@@ -71,6 +71,9 @@ Module Program
         ImportModule("sccommand.Program")
         ImportModule("sccommand.Time")
         ImportModule("sccommand.RootCommands")
+        ImportModule("sccommand.HumanUnitManagement")
+
+        HumanUnitManagement.Init()
 
         For Each arg As String In args
             If arg.StartsWith("/") Then

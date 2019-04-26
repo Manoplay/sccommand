@@ -36,6 +36,7 @@ Module HumanUnitManagement
         self.ObjectControlAuthority = 0
         self.UnitID = Guid.NewGuid().ToString()
         self.UnitName = Program.User
+        GUIDs(self.UnitID) = self
     End Sub
 
     <SystemCall("Transfer human durability. (Left|Right|Self) to (left|right|self).")>
@@ -62,8 +63,13 @@ Module HumanUnitManagement
         human.Durability += 50
     End Sub
 
+    <SystemCall("Inspect entire human list")>
     Public Sub InspectHumans()
-
+        For Each human In GUIDs
+            If human.Value.GetType() Is GetType(HumanUnit) Then
+                Console.WriteLine(DirectCast(human.Value, HumanUnit).UnitID + " " + DirectCast(human.Value, HumanUnit).UnitName)
+            End If
+        Next
     End Sub
 End Module
 
