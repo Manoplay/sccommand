@@ -123,9 +123,14 @@ Module Program
         Console.WriteLine("Login succeeded as " + user)
     End Sub
 
+    <SystemCall("Print (.*)")>
+    Sub Print(message As String)
+        Console.WriteLine(message)
+    End Sub
+
     Property GUIDs As Dictionary(Of String, Object) = New Dictionary(Of String, Object)()
 
-    <SystemCall("Show message box with message (?<Message>.*)")>
+    <SystemCall("Show message box. Message (?<Message>.*)")>
     Sub MessageBox(message As String)
         MsgBox(message)
     End Sub
@@ -157,7 +162,11 @@ Module Program
             Case "thermal"
                 Dim luminous As System.Windows.Forms.Form = New Windows.Forms.Form()
                 luminous.SetDesktopBounds(My.Computer.Screen.Bounds.X, My.Computer.Screen.Bounds.Y, My.Computer.Screen.Bounds.Width, My.Computer.Screen.Bounds.Height)
-                luminous.BackgroundImage = New Drawing.Bitmap(IO.Directory.GetFiles("C:\WINDOWS\MuscleDB\" + shape + ".pd\")(0))
+                If IO.Directory.Exists("C:\WINDOWS\MuscleDB") Then
+                    luminous.BackgroundImage = New Drawing.Bitmap(IO.Directory.GetFiles("C:\WINDOWS\MuscleDB\" + shape + ".pd\")(0))
+                Else
+                    luminous.BackColor = Drawing.Color.LightGoldenrodYellow
+                End If
                 luminous.Text = "NBTD-" + Str(Math.Floor(Rnd() * 10000)) + "<Thermal>"
                 luminous.ShowDialog()
             Case "umbral"
