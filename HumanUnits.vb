@@ -18,6 +18,7 @@ Module HumanUnitManagement
         left As HumanUnit = MyHero.GetOpenPort("Z:\DEVICES\OPENPORT1.SYS").GetObject()
         right As HumanUnit = MyHero.GetOpenPort("Z:\DEVICES\OPENPORT2.SYS").GetObject()
 #End If
+#If NETWORK Then
         Dim root = New DirectoryEntry("WinNT:")
         For Each computers As DirectoryEntry In root.Children
             For Each computer As DirectoryEntry In computers.Children
@@ -31,6 +32,7 @@ Module HumanUnitManagement
             left = New HumanUnit(computers.Children(0))
             right = New HumanUnit(computers.Children(1))
         Next
+#End If
         self = New HumanUnit()
         self.SystemControlAuthority = Program.SCA
         self.ObjectControlAuthority = 0

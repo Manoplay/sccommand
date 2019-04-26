@@ -147,6 +147,12 @@ Module Program
                 luminous.SetDesktopBounds(My.Computer.Screen.Bounds.X, My.Computer.Screen.Bounds.Y, My.Computer.Screen.Bounds.Width, My.Computer.Screen.Bounds.Height)
                 luminous.BackColor = Drawing.Color.White
                 luminous.Text = "NBTD-" + Str(Math.Floor(Rnd() * 10000)) + "<Luminous>"
+                Select Case shape
+                    Case "sword"
+                        Console.WriteLine("The sword shape does not exist for the luminous element. Ignoring parameter.")
+                    Case Else
+                        Console.WriteLine("No such shape: " + shape)
+                End Select
                 luminous.ShowDialog()
             Case "thermal"
                 Dim luminous As System.Windows.Forms.Form = New Windows.Forms.Form()
