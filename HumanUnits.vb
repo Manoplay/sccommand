@@ -33,7 +33,7 @@ Module HumanUnitManagement
             right = New HumanUnit(computers.Children(1))
         Next
 #End If
-        self = New HumanUnit()
+        self = New HumanUnit() 'Genera l'entità locale
         self.SystemControlAuthority = Program.SCA
         self.ObjectControlAuthority = 0
         self.UnitID = Guid.NewGuid().ToString()
