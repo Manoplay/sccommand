@@ -58,7 +58,8 @@ Module Program
                 Catch ex As Exception
                     Console.WriteLine("The Shell did not return a value, or the System Call could not be invoked.")
                     Console.WriteLine("Error id: " + ex.Message)
-                    Debug.Fail("System Call invocation failed")
+                    Debug.Fail(ex.Source, ex.Message)
+                    Debug.Assert(False)
                 End Try
             End If
         Next
@@ -72,8 +73,13 @@ Module Program
         ImportModule("sccommand.Time")
         ImportModule("sccommand.RootCommands")
         ImportModule("sccommand.HumanUnitManagement")
-
         HumanUnitManagement.Init()
+
+#If SECRET Then
+        ImportModule("sccommand.Secret")
+        Secret.DidImport()
+#End If
+
 
         For Each arg As String In args
             If arg.StartsWith("/") Then
@@ -142,6 +148,15 @@ Module Program
             Dim context As String = command.Value.ReflectedType.Name
             Console.WriteLine(context + "      " + name)
         Next
+    End Sub
+
+    <SystemCall("Disadhere (.*) (neutral|low|high|very low|very high) oxidation (.*)")>
+    Sub Disadhere(base As String, oxidation As String, target As String)
+        If GUIDs(base).GetType() Is GetType(HumanUnit) Then
+            Console.WriteLine("Using HumanUnit disadherence command...")
+            Console.WriteLine("Ignored parameter 'oxidation' (" + oxidation + ")")
+            HumanUnitManagement.Disadhere(GUIDs(base), GUIDs(target))
+        End If
     End Sub
 
     <SystemCall("Generate (luminous|thermal|umbral|windowed|controlled|programmed|metallic|cryogenic) element(. Form element (.*) shape)?(.)?")>

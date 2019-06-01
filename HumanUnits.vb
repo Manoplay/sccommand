@@ -1,4 +1,4 @@
-﻿Imports System.DirectoryServices
+﻿Imports System.DirectoryServices.AccountManagement
 
 Module HumanUnitManagement
     <SystemCall("Kick player (.*)")>
@@ -8,6 +8,42 @@ Module HumanUnitManagement
             id.Kick()
         End If
     End Sub
+
+    Private ReadOnly Property cardinal As HumanUnit
+        Get
+            Dim h As HumanUnit = New HumanUnit()
+            h.Durability = 150000
+            h.SystemControlAuthority = 100
+            h.ObjectControlAuthority = 100
+            h.UnitID = "cardinal.exe"
+            h.UnitName = "Cardinal"
+            Return h
+        End Get
+    End Property
+
+    Private ReadOnly Property toby As HumanUnit
+        Get
+            Dim h As HumanUnit = New HumanUnit()
+            h.Durability = 1500000
+            h.SystemControlAuthority = 101
+            h.ObjectControlAuthority = 100
+            h.UnitID = "d6ceea00-ac62-4a9f-af6c-af47c70409ad"
+            h.UnitName = "Toby Parker"
+            Return h
+        End Get
+    End Property
+
+    Private ReadOnly Property kirito As HumanUnit
+        Get
+            Dim h As HumanUnit = New HumanUnit()
+            h.Durability = 3289
+            h.ObjectControlAuthority = 48
+            h.SystemControlAuthority = 59
+            h.UnitID = "NND7-6355"
+            h.UnitName = "Kirito"
+            Return h
+        End Get
+    End Property
 
     Public Property left As HumanUnit
     Public Property right As HumanUnit
@@ -36,9 +72,13 @@ Module HumanUnitManagement
         self = New HumanUnit() 'Genera l'entità locale
         self.SystemControlAuthority = Program.SCA
         self.ObjectControlAuthority = 0
-        self.UnitID = Guid.NewGuid().ToString()
-        self.UnitName = Program.User
+        self.UnitID = UserPrincipal.Current.Guid.GetValueOrDefault().ToString()
+        self.UnitName = Environment.UserName
         GUIDs(self.UnitID) = self
+        GUIDs("localhost") = GUIDs(self.UnitID)
+        GUIDs(kirito.UnitID) = kirito
+        GUIDs(toby.UnitID) = toby
+        GUIDs(cardinal.UnitID) = cardinal
     End Sub
 
     <SystemCall("Transfer human durability. (Left|Right|Self) to (left|right|self).")>
@@ -63,6 +103,36 @@ Module HumanUnitManagement
         End Select
         origin.Durability -= 50
         human.Durability += 50
+    End Sub
+
+    <SystemCall("Inspect human (.*)")>
+    Public Sub InspectSingleHuman(unitID As String)
+        Dim a As HumanUnit = GUIDs(unitID)
+        Console.WriteLine("Unit ID: " + a.UnitID)
+        Console.WriteLine(".NET Type: " + GetType(HumanUnit).AssemblyQualifiedName)
+        Console.WriteLine("Shell Mirror Type: System.PublicInterface.Overworld.HumanUnit")
+        Console.WriteLine("Unit name: " + a.UnitName)
+        Console.WriteLine("System Control Authority: " + a.SystemControlAuthority.ToString())
+        Console.WriteLine("Object Control Authority: " + a.ObjectControlAuthority.ToString())
+        Console.WriteLine("Durability: " + a.Durability.ToString())
+        Console.WriteLine("Delegate: " + a.Delegate.UnitName + " (" + a.Delegate.UnitID + ")")
+        Console.WriteLine("Friends: ")
+        If a.Friends(0) IsNot Nothing Then
+            For i As Integer = 0 To a.Friends.Count
+                If a.Friends(i) IsNot Nothing Then Console.WriteLine(i.ToString() + ". " + a.Friends(i).UnitName + "(" + a.Friends(i).UnitID + ")")
+            Next
+        Else
+            Console.WriteLine("1. Etere")
+        End If
+    End Sub
+
+    Public Sub Disadhere(base As HumanUnit, target As HumanUnit)
+        If base.Delegate = target Then
+            Console.WriteLine(base.UnitName + " and " + target.UnitName + " are delegates. The operation could not be performed (NO WARN RECEIVED).")
+            Return
+        End If
+        base.Friends.Remove((base.SearchFriend(target.UnitID)))
+        Console.WriteLine("Disadherence between " + base.UnitID + " (" + base.UnitName + ") and " + target.UnitID + " (" + target.UnitName + ") successfully applied.")
     End Sub
 
     <SystemCall("Inspect entire human list")>
@@ -97,27 +167,34 @@ Module HumanUnitManagement
 End Module
 
 Public Class HumanUnit
+    Public Property [Delegate] As HumanUnit
     Public Property Durability As Integer = 100
+    Public Property Friends As List(Of HumanUnit) = New List(Of HumanUnit)()
     Public Property UnitID As String
     Public Property UnitName As String
-    Public Property SystemControlAuthority As Integer
-    Public Property ObjectControlAuthority As Integer
+    Public Property SystemControlAuthority As Integer = 0
+    Public Property ObjectControlAuthority As Integer = 0
     Public Sub Kick()
         Durability = 0
     End Sub
-    Public Shared Operator =(orig As HumanUnit, dest As HumanUnit)
-        Return orig.UnitID = dest.UnitID
-    End Operator
-    Public Shared Operator <>(orig As HumanUnit, dest As HumanUnit)
-        Return orig.UnitID <> dest.UnitID
-    End Operator
     Public Sub New()
 
     End Sub
-    Public Sub New(computer As DirectoryEntry)
-        UnitID = computer.Guid.ToString()
-        UnitName = computer.Name
-        SystemControlAuthority = 5 ' Un computer non può avere un'autorità più alta
-        ObjectControlAuthority = 0 ' Non ha un corpo
-    End Sub
+
+    Public Shared Operator =(origin As HumanUnit, target As HumanUnit)
+        Return origin.UnitID = target.UnitID
+    End Operator
+
+    Public Shared Operator <>(origin As HumanUnit, target As HumanUnit)
+        Return origin.UnitID <> target.UnitID
+    End Operator
+
+    Public Function SearchFriend(UnitID As String) As HumanUnit
+        For Each bff In Friends
+            If bff.UnitID = UnitID Then
+                Return bff
+            End If
+        Next
+        Return Nothing
+    End Function
 End Class
