@@ -116,10 +116,10 @@ Module HumanUnitManagement
         Console.WriteLine("System Control Authority: " + a.SystemControlAuthority.ToString())
         Console.WriteLine("Object Control Authority: " + a.ObjectControlAuthority.ToString())
         Console.WriteLine("Durability: " + a.Durability.ToString())
-        If a.Delegate IsNot Nothing Then Console.WriteLine(If(My.Settings.UseTechnicalNames, "Delegate: ", "Best best friend:") + a.Delegate.UnitName + " (" + a.Delegate.UnitID + ")")
+        If a.Delegate IsNot Nothing Then Console.WriteLine(If(My.Settings.UseTechnicalNames, "Delegate: ", "Best best friend: ") + a.Delegate.UnitName + " (" + a.Delegate.UnitID + ")")
         Console.WriteLine("Friends: ")
-        If a.Friends(0) IsNot Nothing Then
-            For i As Integer = 0 To a.Friends.Count
+        If a.Friends.Count > 0 Then
+            For i As Integer = 0 To a.Friends.Count - 1
                 If a.Friends(i) IsNot Nothing Then Console.WriteLine(i.ToString() + ". " + a.Friends(i).UnitName + "(" + a.Friends(i).UnitID + ")")
             Next
         Else
@@ -168,6 +168,24 @@ Module HumanUnitManagement
     Public Sub Point(name As String)
         Console.WriteLine("Failed to download " + name + ".ifo from http://80.103.90.150/users.php")
     End Sub
+
+    <SystemCall("Check friendship between (.*) and (.*)")>
+    Public Sub CheckFriendship(source As String, target As String)
+        Dim baseUnit As HumanUnit = GUIDs(source)
+        Dim targetUnit As HumanUnit = GUIDs(target)
+#If MAGIC Then
+        Dim magicMyHero As Process = Process.Start("Z:\MAGICSACKBOY\BOOTx128\MAGIC-MYHERO.DEKU.EXE", source + " " + target)
+#Else
+        If baseUnit.Delegate = targetUnit Then
+            Console.WriteLine("2")
+        ElseIf baseUnit.Friends.Contains(targetUnit) Then
+            Console.WriteLine("1")
+        Else
+            Console.WriteLine("-1")
+        End If
+#End If
+    End Sub
+
 End Module
 
 Public Class HumanUnit

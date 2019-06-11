@@ -13,6 +13,14 @@ Module Reflection
         Next
     End Sub
 
+    <SystemCall("Reflect type (.*)")>
+    Public Sub ReflectType(type As String)
+        Dim t As Type = System.Type.GetType(type, True, True)
+        Dim g As String = Guid.NewGuid().ToString()
+        GUIDs(g) = t
+        Console.WriteLine(g)
+    End Sub
+
     <SystemCall("Get method info for (.*) on (.*)")>
     Public Sub GetMethodInfo(method As String, type As String)
         Dim t As Type = System.Type.GetType(type, True, True)
