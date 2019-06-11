@@ -21,7 +21,7 @@ End Class
 
 Module Program
 
-    Public Property User As String = My.User.Name
+    Public Property User As String = WindowsPrincipal.Current.Identity.Name
     Public Property SCA As Integer = 1
     Public Property Commands As Dictionary(Of Regex, MethodInfo) = New Dictionary(Of Regex, MethodInfo)()
 
@@ -56,8 +56,12 @@ Module Program
                 Try
                     Command.Value.Invoke(Nothing, cargs.ToArray())
                 Catch ex As Exception
-                    Console.WriteLine("The Shell did not return a value, or the System Call could not be invoked.")
-                    Console.WriteLine("Error id: " + ex.Message)
+                    If My.Settings.UseTechnicalNames Then
+                        Console.WriteLine("The Shell did not return a value, or the System Call could not be invoked.")
+                        Console.WriteLine("Error id: " + ex.Message)
+                    Else
+                        Console.WriteLine("The invocation of the command raised an error. Ask a minister.")
+                    End If
                     Debug.Fail(ex.Source, ex.Message)
                     Debug.Assert(False)
                 End Try
@@ -79,6 +83,8 @@ Module Program
         ImportModule("sccommand.Secret")
         Secret.DidImport()
 #End If
+
+        ImportModule("sccommand.Reflection")
 
 
         For Each arg As String In args
@@ -139,6 +145,16 @@ Module Program
     <SystemCall("Show message box. Message (?<Message>.*)")>
     Sub MessageBox(message As String)
         MsgBox(message)
+    End Sub
+
+    <SystemCall("Use (technical|simple) terms")>
+    Sub SetTechnical(mode As String)
+        If mode = "simple" Then
+            My.Settings.UseTechnicalNames = False
+        Else
+            My.Settings.UseTechnicalNames = True
+        End If
+        My.Settings.Save()
     End Sub
 
     <SystemCall("Inspect entire command list")>

@@ -109,6 +109,7 @@
       <DesignTimeSharedInput>True</DesignTimeSharedInput>
     </Compile>
     <Compile Include="Program.vb" />
+    <Compile Include="Reflection.vb" />
     <Compile Include="Secret.vb" />
   </ItemGroup>
   <ItemGroup>

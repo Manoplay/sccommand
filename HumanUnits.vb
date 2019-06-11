@@ -72,7 +72,7 @@ Module HumanUnitManagement
         self = New HumanUnit() 'Genera l'entità locale
         self.SystemControlAuthority = Program.SCA
         self.ObjectControlAuthority = 0
-        self.UnitID = UserPrincipal.Current.Guid.GetValueOrDefault().ToString()
+        self.UnitID = Guid.NewGuid().ToString()
         self.UnitName = Environment.UserName
         GUIDs(self.UnitID) = self
         GUIDs("localhost") = GUIDs(self.UnitID)
@@ -108,6 +108,7 @@ Module HumanUnitManagement
     <SystemCall("Inspect human (.*)")>
     Public Sub InspectSingleHuman(unitID As String)
         Dim a As HumanUnit = GUIDs(unitID)
+        Console.WriteLine("Internal sccommand hash code: " + a.GetHashCode().ToString())
         Console.WriteLine("Unit ID: " + a.UnitID)
         Console.WriteLine(".NET Type: " + GetType(HumanUnit).AssemblyQualifiedName)
         Console.WriteLine("Shell Mirror Type: System.PublicInterface.Overworld.HumanUnit")
@@ -115,7 +116,7 @@ Module HumanUnitManagement
         Console.WriteLine("System Control Authority: " + a.SystemControlAuthority.ToString())
         Console.WriteLine("Object Control Authority: " + a.ObjectControlAuthority.ToString())
         Console.WriteLine("Durability: " + a.Durability.ToString())
-        Console.WriteLine("Delegate: " + a.Delegate.UnitName + " (" + a.Delegate.UnitID + ")")
+        If a.Delegate IsNot Nothing Then Console.WriteLine(If(My.Settings.UseTechnicalNames, "Delegate: ", "Best best friend:") + a.Delegate.UnitName + " (" + a.Delegate.UnitID + ")")
         Console.WriteLine("Friends: ")
         If a.Friends(0) IsNot Nothing Then
             For i As Integer = 0 To a.Friends.Count
@@ -131,8 +132,11 @@ Module HumanUnitManagement
             Console.WriteLine(base.UnitName + " and " + target.UnitName + " are delegates. The operation could not be performed (NO WARN RECEIVED).")
             Return
         End If
-        base.Friends.Remove((base.SearchFriend(target.UnitID)))
-        Console.WriteLine("Disadherence between " + base.UnitID + " (" + base.UnitName + ") and " + target.UnitID + " (" + target.UnitName + ") successfully applied.")
+        If base.Friends.Remove((base.SearchFriend(target.UnitID))) Then
+            Console.WriteLine("Disadherence between " + base.UnitID + " (" + base.UnitName + ") and " + target.UnitID + " (" + target.UnitName + ") successfully applied.")
+        Else
+            Console.WriteLine("Disadherence between " + base.UnitID + " (" + base.UnitName + ") and " + target.UnitID + " (" + target.UnitName + ") not applied.")
+        End If
     End Sub
 
     <SystemCall("Inspect entire human list")>
