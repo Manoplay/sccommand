@@ -1,5 +1,6 @@
 Imports System
 Imports System.Reflection
+Imports System.Runtime.CompilerServices
 Imports System.Security.Principal
 Imports System.Text.RegularExpressions
 
@@ -45,7 +46,7 @@ Module Program
         End If
     End Sub
 
-    Sub Invoke(commandbuffer As String)
+    Sub Invoke(commandbuffer As String, <CallerMemberName()> Optional sender As String = "")
         For Each Command As KeyValuePair(Of Regex, MethodInfo) In Commands
             If Command.Key.Match(commandbuffer).Success Then
                 Dim cargs As List(Of String) = New List(Of String)()
@@ -53,18 +54,19 @@ Module Program
                     cargs.Add(group.Value)
                 Next
                 cargs.RemoveAt(0)
-                Try
-                    Command.Value.Invoke(Nothing, cargs.ToArray())
-                Catch ex As Exception
-                    If My.Settings.UseTechnicalNames Then
-                        Console.WriteLine("The Shell did not return a value, or the System Call could not be invoked.")
-                        Console.WriteLine("Error id: " + ex.Message)
-                    Else
-                        Console.WriteLine("The invocation of the command raised an error. Ask a minister.")
-                    End If
-                    Debug.Fail(ex.Source, ex.Message)
-                    Debug.Assert(False)
-                End Try
+                'Try
+                Command.Value.Invoke(Nothing, cargs.ToArray())
+                Return
+                'Catch ex As Exception
+                'If My.Settings.UseTechnicalNames Then
+                'Console.WriteLine("The Shell did not return a value, or the System Call could not be invoked.")
+                'Console.WriteLine("Error id: " + ex.Message)
+                'Else
+                'onsole.WriteLine("The invocation of the command raised an error. Ask a minister.")
+                ' End If
+                'Debug.Fail(ex.Source, ex.Message)
+                'Debug.Assert(False)
+                'End Try
             End If
         Next
     End Sub
@@ -245,6 +247,41 @@ Module Program
     Sub PlaySound(sound As String)
         My.Computer.Audio.Play(sound)
     End Sub
+
+    <SystemCall("Iterate through (.*): (.*)")>
+    Sub Iterate(array As String, command As String)
+        Dim obj = InterpretObject(array)
+        If GetType(IEnumerable).IsAssignableFrom(obj.GetType()) Then
+            For Each item In obj
+                GUIDs("item") = item
+                Invoke(command)
+            Next
+            GUIDs.Remove("item")
+            Return
+        Else
+            Console.WriteLine("Not iteratable")
+        End If
+    End Sub
+
+    Function InterpretObject([object] As String) As Object
+        If [object].Contains("of") Then
+            Dim arrayOf = [object].Split({"of"}, StringSplitOptions.RemoveEmptyEntries)
+            Dim reversed = arrayOf.Reverse()
+            Dim consider As Object
+            For i As Integer = 0 To reversed.Count - 1
+                If i = 0 Then
+                    consider = GUIDs(reversed(i).Trim())
+                    Continue For
+                End If
+#Disable Warning BC42104 ' La variabile è stata usata prima dell'assegnazione di un valore
+                consider = TryCast(consider.GetType().GetMember(reversed(i).Trim())(0), PropertyInfo).GetValue(consider)
+#Enable Warning BC42104 ' La variabile è stata usata prima dell'assegnazione di un valore
+            Next
+            Return consider
+        End If
+        Return Nothing
+    End Function
+
 End Module
 
 Module Time

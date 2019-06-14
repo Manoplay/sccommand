@@ -41,6 +41,14 @@ Module Reflection
         Console.WriteLine(s)
     End Sub
 
+
+    <SystemCall("Get property (.*) for (.*)")>
+    Public Sub GetProperty(prop As String, guid As String)
+        Dim t As Type = GUIDs(guid).GetType()
+        Dim p As PropertyInfo = t.GetMember(prop)(0)
+        Console.WriteLine(p.GetValue(GUIDs(guid)))
+    End Sub
+
     <SystemCall("Set property (.*) to (.*) for (.*)")>
     Public Sub SetProperty(prop As String, value As String, guid As String)
         Dim t As Type = GUIDs(guid).GetType()
