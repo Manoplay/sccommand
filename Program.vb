@@ -1,4 +1,5 @@
 Imports System
+Imports System.IO
 Imports System.Reflection
 Imports System.Runtime.CompilerServices
 Imports System.Security.Principal
@@ -89,6 +90,7 @@ Module Program
 
         ImportModule("sccommand.Reflection")
 
+        RunScript("C:\Users\" + Environment.UserName + "\sccommand\.startuprc")
 
         For Each arg As String In args
             If arg.StartsWith("/") Then
@@ -98,6 +100,8 @@ Module Program
                         Return
                     Case "/v"
                         Verbose = True
+                    Case "/F"
+                        RunScript(args(Array.IndexOf(args, arg) + 1))
                 End Select
             Else
                 commandBuffer += arg + " "
@@ -119,6 +123,13 @@ Module Program
 
 
         VWrite(commandBuffer)
+    End Sub
+
+    Sub RunScript(script As String)
+        Dim code = File.ReadAllLines(script)
+        For Each line In code
+            Invoke(line)
+        Next
     End Sub
 
     ''' <summary>
