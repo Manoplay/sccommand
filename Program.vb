@@ -79,12 +79,13 @@ Module Program
         ImportModule("sccommand.Time")
         ImportModule("sccommand.RootCommands")
         ImportModule("sccommand.HumanUnitManagement")
-        HumanUnitManagement.Init()
-
 #If SECRET Then
         ImportModule("sccommand.Secret")
         Secret.DidImport()
 #End If
+        HumanUnitManagement.Init()
+
+
 
         ImportModule("sccommand.Reflection")
 
@@ -174,6 +175,15 @@ Module Program
             Console.WriteLine("Using HumanUnit disadherence command...")
             Console.WriteLine("Ignored parameter 'oxidation' (" + oxidation + ")")
             HumanUnitManagement.Disadhere(GUIDs(base), GUIDs(target))
+        End If
+    End Sub
+
+    <SystemCall("Adhere (.*) (neutral|low|high|very low|very high) oxidation (.*)")>
+    Sub Adhere(base As String, oxidation As String, target As String)
+        If GUIDs(base).GetType() Is GetType(HumanUnit) Then
+            Console.WriteLine("Using HumanUnit adherence command...")
+            Console.WriteLine("Ignored parameter 'oxidation' (" + oxidation + ")")
+            HumanUnitManagement.Adhere(GUIDs(base), GUIDs(target))
         End If
     End Sub
 

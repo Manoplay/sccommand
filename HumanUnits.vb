@@ -1,4 +1,6 @@
 ﻿Imports System.DirectoryServices.AccountManagement
+Imports System.IO
+Imports System.Xml.Serialization
 
 Module HumanUnitManagement
     <SystemCall("Kick player (.*)")>
@@ -79,6 +81,33 @@ Module HumanUnitManagement
         GUIDs(kirito.UnitID) = kirito
         GUIDs(toby.UnitID) = toby
         GUIDs(cardinal.UnitID) = cardinal
+        ReloadUnitsFromDisk()
+    End Sub
+
+    Public Sub ReloadUnitsFromDisk()
+        Dim root = "C:\Users\" + Environment.UserName + "\sccommand\HumanUnits\"
+        If Directory.Exists(root) Then
+            Dim files = Directory.GetFiles(root)
+            For Each file In files
+                Console.WriteLine(file)
+                Dim hu = HumanUnit.Deserialize(file)
+                GUIDs(hu.UnitID) = hu
+            Next
+        End If
+    End Sub
+
+    Public Sub Adhere(base As HumanUnit, target As HumanUnit)
+        If base.Delegate = target Then
+            Console.WriteLine(base.UnitName + " and " + target.UnitName + " are delegates. The operation could not be performed (NO WARN RECEIVED).")
+            Return
+        End If
+        base.Friends.Add(target)
+        Console.WriteLine("Adherence between " + base.UnitID + " (" + base.UnitName + ") and " + target.UnitID + " (" + target.UnitName + ") successfully applied.")
+    End Sub
+
+    <SystemCall("Reload")>
+    Public Sub Reload()
+        ReloadUnitsFromDisk()
     End Sub
 
     <SystemCall("Transfer human durability. (Left|Right|Self) to (left|right|self).")>
@@ -103,6 +132,12 @@ Module HumanUnitManagement
         End Select
         origin.Durability -= 50
         human.Durability += 50
+    End Sub
+
+    <SystemCall("Save human unit (.*)")>
+    Public Sub Save(unitID As String)
+        Dim a As HumanUnit = GUIDs(unitID)
+        a.Serialize("C:\Users\" + Environment.UserName + "\sccommand\HumanUnits\" + a.UnitID + ".hu")
     End Sub
 
     <SystemCall("Inspect human (.*)")>
@@ -154,14 +189,14 @@ Module HumanUnitManagement
         If hand = "right" Then right = GUIDs(guid)
     End Sub
 
-    <SystemCall("Generate human unit. Unit ID (.*). Unit name (.*).( System Control Authority ([0-9]*))?(.)?( Object Control Authority ([0-9]*))?(.)?")>
-    Public Sub AddHuman(ID As String, Name As String, Optional pm1 As String = "", Optional sca As String = "1", Optional dot1 As String = "", Optional pm2 As String = "", Optional oca As String = "1", Optional dot2 As String = "")
+    <SystemCall("Generate human unit. Unit name (.*).( System Control Authority ([0-9]*))?(.)?( Object Control Authority ([0-9]*))?(.)?")>
+    Public Sub AddHuman(Name As String, Optional pm1 As String = "", Optional sca As String = "1", Optional dot1 As String = "", Optional pm2 As String = "", Optional oca As String = "1", Optional dot2 As String = "")
         Dim h As HumanUnit = New HumanUnit()
-        h.UnitID = ID
+        h.UnitID = Guid.NewGuid().ToString()
         h.UnitName = Name
         h.SystemControlAuthority = Val(sca)
         h.ObjectControlAuthority = Val(oca)
-        GUIDs.Add(ID, h)
+        GUIDs.Add(h.UnitID, h)
     End Sub
 
     <SystemCall("Link to human unit. Unit name (.*)")>
@@ -188,13 +223,48 @@ Module HumanUnitManagement
 
 End Module
 
+<Serializable>
+<XmlRoot("Human")>
 Public Class HumanUnit
+    <XmlElement("Delegate")>
+    Public Property delegateID As String = ""
+    <XmlIgnore>
     Public Property [Delegate] As HumanUnit
+        Get
+            If GUIDs.ContainsKey(delegateID) Then Return GUIDs(delegateID) Else Return Nothing
+        End Get
+        Set(value As HumanUnit)
+            delegateID = value.UnitID
+        End Set
+    End Property
+    <XmlAttribute("Durability")>
     Public Property Durability As Integer = 100
+    <XmlArray("Friends")>
+    <XmlArrayItem("Friend")>
+    Public Property StringFriends As List(Of String)
+        Get
+            Dim l As List(Of String) = New List(Of String)
+            For Each item In Friends
+                l.Add(item.UnitID)
+            Next
+            Return l
+        End Get
+        Set(value As List(Of String))
+            Friends = New List(Of HumanUnit)
+            For Each item In value
+                Friends.Add(GUIDs(item))
+            Next
+        End Set
+    End Property
+    <XmlIgnore>
     Public Property Friends As List(Of HumanUnit) = New List(Of HumanUnit)()
+    <XmlAttribute("UnitID")>
     Public Property UnitID As String
+    <XmlAttribute("UnitName")>
     Public Property UnitName As String
+    <XmlAttribute("SCA")>
     Public Property SystemControlAuthority As Integer = 0
+    <XmlAttribute("OCA")>
     Public Property ObjectControlAuthority As Integer = 0
     Public Sub Kick()
         Durability = 0
@@ -202,6 +272,21 @@ Public Class HumanUnit
     Public Sub New()
 
     End Sub
+
+    Public Sub Serialize(outFile As String)
+        Dim serializer = New XmlSerializer(GetType(HumanUnit))
+        Dim fileStream As FileStream = File.Create(outFile)
+        serializer.Serialize(fileStream, Me)
+        fileStream.Close()
+    End Sub
+
+    Public Shared Function Deserialize(xmlFile As String) As HumanUnit
+        Dim deserializer = New XmlSerializer(GetType(HumanUnit))
+        Dim stream As FileStream = File.OpenRead(xmlFile)
+        Dim output As HumanUnit = deserializer.Deserialize(stream)
+        stream.Close()
+        Return output
+    End Function
 
     Public Shared Operator =(origin As HumanUnit, target As HumanUnit)
         Return origin.UnitID = target.UnitID
