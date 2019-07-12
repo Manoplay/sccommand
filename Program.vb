@@ -206,18 +206,12 @@ Module Program
                 luminous.SetDesktopBounds(My.Computer.Screen.Bounds.X, My.Computer.Screen.Bounds.Y, My.Computer.Screen.Bounds.Width, My.Computer.Screen.Bounds.Height)
                 luminous.BackColor = Drawing.Color.White
                 luminous.Text = "NBTD-" + Str(Math.Floor(Rnd() * 10000)) + "<Luminous>"
-                Select Case shape
-                    Case "sword"
-                        Console.WriteLine("The sword shape does not exist for the luminous element. Ignoring parameter.")
-                    Case Else
-                        Console.WriteLine("No such shape: " + shape)
-                End Select
                 luminous.ShowDialog()
             Case "thermal"
                 Dim luminous As System.Windows.Forms.Form = New Windows.Forms.Form()
                 luminous.SetDesktopBounds(My.Computer.Screen.Bounds.X, My.Computer.Screen.Bounds.Y, My.Computer.Screen.Bounds.Width, My.Computer.Screen.Bounds.Height)
-                If IO.Directory.Exists("C:\WINDOWS\MuscleDB") Then
-                    luminous.BackgroundImage = New Drawing.Bitmap(IO.Directory.GetFiles("C:\WINDOWS\MuscleDB\" + shape + ".pd\")(0))
+    If IO.Directory.Exists("C:\WINDOWS\Overworld\ThermalElements") Then
+                    luminous.BackgroundImage = New Drawing.Bitmap(IO.Directory.GetFiles("C:\WINDOWS\Overworld\ThermalElements\" + shape + ".pd\")(0))
                 Else
                     luminous.BackColor = Drawing.Color.LightGoldenrodYellow
                 End If
@@ -294,9 +288,9 @@ Module Program
                     consider = GUIDs(reversed(i).Trim())
                     Continue For
                 End If
-#Disable Warning BC42104 ' La variabile è stata usata prima dell'assegnazione di un valore
+#Disable Warning BC42104 ' La variabile Ã¨ stata usata prima dell'assegnazione di un valore
                 consider = TryCast(consider.GetType().GetMember(reversed(i).Trim())(0), PropertyInfo).GetValue(consider)
-#Enable Warning BC42104 ' La variabile è stata usata prima dell'assegnazione di un valore
+#Enable Warning BC42104 ' La variabile Ã¨ stata usata prima dell'assegnazione di un valore
             Next
             Return consider
         End If
