@@ -89,7 +89,7 @@ Module HumanUnitManagement
         If Directory.Exists(root) Then
             Dim files = Directory.GetFiles(root)
             For Each file In files
-                Console.WriteLine(file)
+                VWrite(file)
                 Dim hu = HumanUnit.Deserialize(file)
                 GUIDs(hu.UnitID) = hu
             Next
@@ -171,6 +171,27 @@ Module HumanUnitManagement
             Console.WriteLine("Disadherence between " + base.UnitID + " (" + base.UnitName + ") and " + target.UnitID + " (" + target.UnitName + ") successfully applied.")
         Else
             Console.WriteLine("Disadherence between " + base.UnitID + " (" + base.UnitName + ") and " + target.UnitID + " (" + target.UnitName + ") not applied.")
+        End If
+    End Sub
+
+    <SystemCall("Add delegate (.*)")>
+    Public Sub AddDelegate(target As String)
+        Console.WriteLine("Checking presence of free space")
+        If GUIDs(target).Delegate IsNot Nothing Then
+            Throw New AccessViolationException(GUIDs(target).UnitName + "'s delegate is " + GUIDs(target).Delegate.UnitName)
+        Else
+            GUIDs(target).Delegate = GUIDs("localhost.exe")
+        End If
+    End Sub
+
+    <SystemCall("Remove delegate (.*)")>
+    Public Sub RemoveDelegate(target As String)
+        If target = "localhost.exe" Then
+            GUIDs(target).Delegate = Nothing
+        ElseIf GUIDs(target).Delegate IsNot Nothing Then
+            Throw New UnauthorizedAccessException("Delegated relationship between " + GUIDs(target).UnitName + " and " + GUIDs(target).Delegate.UnitName + " is too strong to be removed by this account. You must be a minister/ministrant with authority >= 100 (you are " + Program.SCA.ToString() + ").")
+        Else
+            Console.WriteLine("Delegate of " + GUIDs(target).UnitName + " is arleady Nothing/null. 0 changes committed.")
         End If
     End Sub
 

@@ -1,5 +1,5 @@
-Imports System
 Imports System.IO
+Imports MyHero = System
 Imports System.Reflection
 Imports System.Runtime.CompilerServices
 Imports System.Security.Principal
@@ -10,6 +10,14 @@ Public Class SystemCall
     Public RegEx As Regex
     Public Sub New(RegEx As String)
         Me.RegEx = New Regex(RegEx)
+    End Sub
+End Class
+
+Public Class RequiresSCA
+    Inherits Attribute
+    Public Property RequiredSCA As Integer
+    Public Sub New(sca As Integer)
+        RequiredSCA = sca
     End Sub
 End Class
 
@@ -47,27 +55,34 @@ Module Program
         End If
     End Sub
 
-    Sub Invoke(commandbuffer As String, <CallerMemberName()> Optional sender As String = "")
+    <SystemCall("Synchronize system user")>
+    Sub SynchronizeUser()
+        User = WindowsPrincipal.Current.Identity.Name
+        SCA = 1
+    End Sub
+
+    Sub Invoke(commandbuffer As String)
         For Each Command As KeyValuePair(Of Regex, MethodInfo) In Commands
             If Command.Key.Match(commandbuffer).Success Then
+                CheckIdoneity(Command.Value)
                 Dim cargs As List(Of String) = New List(Of String)()
                 For Each group As Group In Command.Key.Match(commandbuffer).Groups
                     cargs.Add(group.Value)
                 Next
                 cargs.RemoveAt(0)
-                'Try
-                Command.Value.Invoke(Nothing, cargs.ToArray())
-                Return
-                'Catch ex As Exception
-                'If My.Settings.UseTechnicalNames Then
-                'Console.WriteLine("The Shell did not return a value, or the System Call could not be invoked.")
-                'Console.WriteLine("Error id: " + ex.Message)
-                'Else
-                'onsole.WriteLine("The invocation of the command raised an error. Ask a minister.")
-                ' End If
-                'Debug.Fail(ex.Source, ex.Message)
-                'Debug.Assert(False)
-                'End Try
+                Try
+                    Command.Value.Invoke(Nothing, cargs.ToArray())
+                    Return
+                Catch ex As Exception
+                    If My.Settings.UseTechnicalNames Then
+                        Console.WriteLine("The Shell did not return a value, or the System Call could not be invoked.")
+                        Console.WriteLine("Error id: " + ex.InnerException.Message)
+                    Else
+                        Console.WriteLine("The invocation of the command raised an error. Ask a minister.")
+                    End If
+                    Debug.Fail(ex.Source, ex.Message)
+                    Debug.Assert(False)
+                End Try
             End If
         Next
     End Sub
@@ -78,6 +93,7 @@ Module Program
         ' Analyze modules
         ImportModule("sccommand.Program")
         ImportModule("sccommand.Time")
+        ImportModule("sccommand.Reflection")
         ImportModule("sccommand.RootCommands")
         ImportModule("sccommand.HumanUnitManagement")
 #If SECRET Then
@@ -86,11 +102,7 @@ Module Program
 #End If
         HumanUnitManagement.Init()
 
-
-
-        ImportModule("sccommand.Reflection")
-
-        RunScript("C:\Users\" + Environment.UserName + "\sccommand\.startuprc")
+        If File.Exists("C:\Users\" + Environment.UserName + "\sccommand\.startuprc") Then RunScript("C:\Users\" + Environment.UserName + "\sccommand\.startuprc")
 
         For Each arg As String In args
             If arg.StartsWith("/") Then
@@ -101,6 +113,9 @@ Module Program
                     Case "/v"
                         Verbose = True
                     Case "/F"
+                        RunScript(args(Array.IndexOf(args, arg) + 1))
+                        Return
+                    Case "/K"
                         RunScript(args(Array.IndexOf(args, arg) + 1))
                 End Select
             Else
@@ -123,6 +138,15 @@ Module Program
 
 
         VWrite(commandBuffer)
+    End Sub
+
+    Sub CheckIdoneity(command As MethodInfo)
+        Dim requirityAttribute = command.GetCustomAttribute(Of RequiresSCA)
+        If requirityAttribute IsNot Nothing Then
+            If Not SCA > requirityAttribute.RequiredSCA Then
+                Throw New UnauthorizedAccessException("You are not authorized to perform this command. Required SCA is " + requirityAttribute.RequiredSCA.ToString())
+            End If
+        End If
     End Sub
 
     Sub RunScript(script As String)
@@ -214,7 +238,7 @@ Module Program
                 End Select
                 luminous.ShowDialog()
             Case "thermal"
-                Dim luminous As System.Windows.Forms.Form = New Windows.Forms.Form()
+                Dim luminous As MyHero.Windows.Forms.Form = New Windows.Forms.Form()
                 luminous.SetDesktopBounds(My.Computer.Screen.Bounds.X, My.Computer.Screen.Bounds.Y, My.Computer.Screen.Bounds.Width, My.Computer.Screen.Bounds.Height)
                 If IO.Directory.Exists("C:\WINDOWS\MuscleDB") Then
                     luminous.BackgroundImage = New Drawing.Bitmap(IO.Directory.GetFiles("C:\WINDOWS\MuscleDB\" + shape + ".pd\")(0))
@@ -226,7 +250,7 @@ Module Program
             Case "umbral"
                 Process.Start("http://meteo.it")
             Case "windowed"
-                Dim w As System.Windows.Forms.Form = New Windows.Forms.Form()
+                Dim w As MyHero.Windows.Forms.Form = New Windows.Forms.Form()
                 Dim g As Guid = Guid.NewGuid()
                 Console.WriteLine(g.ToString())
                 GUIDs.Add(g.ToString(), w)
@@ -321,7 +345,7 @@ Module Time
     Public Sub Rewind(timeS As String)
         Dim time As Integer = Val(timeS)
         Windows.Forms.SendKeys.SendWait(Windows.Forms.Keys.MediaPreviousTrack)
-        Console.WriteLine("PakyMorl rewound by " + (time * Math.Sqrt(2)).ToString() + " seconds.")
+        Console.WriteLine("System rewound by " + (time * Math.Sqrt(2)).ToString() + " seconds.")
     End Sub
 End Module
 
