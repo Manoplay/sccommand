@@ -1,4 +1,5 @@
 ﻿Imports System.Reflection
+Imports MyHero = System
 
 Module Reflection
 
@@ -15,7 +16,7 @@ Module Reflection
 
     <SystemCall("Reflect type (.*)")>
     Public Sub ReflectType(type As String)
-        Dim t As Type = System.Type.GetType(type, True, True)
+        Dim t As Type = MyHero.Type.GetType(type, True, True)
         Dim g As String = Guid.NewGuid().ToString()
         GUIDs(g) = t
         Console.WriteLine(g)
@@ -35,7 +36,7 @@ Module Reflection
 
     <SystemCall("Generate reflected element. Form element (.*) shape.")>
     Public Sub GenerateReflected(form As String)
-        Dim t As Type = System.Type.GetType(form, True, True)
+        Dim t As Type = MyHero.Type.GetType(form, True, True)
         Dim s As String = Guid.NewGuid().ToString()
         GUIDs(s) = Activator.CreateInstance(t)
         Console.WriteLine(s)
@@ -69,7 +70,7 @@ Module Reflection
     <SystemCall("Invoke method (.*) on (.*)( with (.*))?")>
     Public Sub Invoke(method As String, type_guid As String, isArged As String, args As String)
         Try
-            Dim t As Type = System.Type.GetType(type_guid, True, True)
+            Dim t As Type = MyHero.Type.GetType(type_guid, True, True)
             Dim m As MethodInfo = t.GetMember(method)(0)
             If isArged <> "" Then
                 m.Invoke(Nothing, args.Split(";"))
@@ -85,6 +86,14 @@ Module Reflection
                 m.Invoke(GUIDs(type_guid), Nothing)
             End If
         End Try
+    End Sub
+
+    <SystemCall("Inspect object (.*)")>
+    Public Sub InspectObject(guid As String)
+        Dim propertyInfo = GUIDs(guid).GetType().GetProperties()
+        For Each prop In propertyInfo
+            Console.WriteLine(prop.Name + ": " + prop.GetValue(GUIDs(guid)).ToString())
+        Next
     End Sub
 
 End Module

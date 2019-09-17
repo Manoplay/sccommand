@@ -4,6 +4,7 @@ Imports System.Reflection
 Imports System.Runtime.CompilerServices
 Imports System.Security.Principal
 Imports System.Text.RegularExpressions
+Imports System.Net.WebSockets
 
 Public Class SystemCall
     Inherits Attribute
@@ -21,6 +22,15 @@ Public Class RequiresSCA
     End Sub
 End Class
 
+Public Class RequiresContext
+    Inherits Attribute
+
+    Public Property RequiredContext As String
+    Public Sub New(context As String)
+        RequiredContext = context
+    End Sub
+End Class
+
 Public Class SystemContext
     Inherits Attribute
     Public Name As String
@@ -33,6 +43,7 @@ Module Program
 
     Public Property User As String = WindowsPrincipal.Current.Identity.Name
     Public Property SCA As Integer = 1
+    Public Property Contexts As List(Of Context) = New List(Of Context)
     Public Property Commands As Dictionary(Of Regex, MethodInfo) = New Dictionary(Of Regex, MethodInfo)()
 
     Sub ImportModule(name As String)
@@ -48,6 +59,7 @@ Module Program
     End Sub
 
     Public Verbose As Boolean = False
+    Public Property PROMPT As String = "SCCOMMAND %pwd>"
 
     Public Sub VWrite(text As String)
         If (Verbose) Then
@@ -64,28 +76,41 @@ Module Program
     Sub Invoke(commandbuffer As String)
         For Each Command As KeyValuePair(Of Regex, MethodInfo) In Commands
             If Command.Key.Match(commandbuffer).Success Then
-                CheckIdoneity(Command.Value)
-                Dim cargs As List(Of String) = New List(Of String)()
-                For Each group As Group In Command.Key.Match(commandbuffer).Groups
-                    cargs.Add(group.Value)
-                Next
-                cargs.RemoveAt(0)
                 Try
+                    CheckIdoneity(Command.Value)
+                    Dim cargs As List(Of String) = New List(Of String)()
+                    For Each group As Group In Command.Key.Match(commandbuffer).Groups
+                        cargs.Add(group.Value)
+                    Next
+                    cargs.RemoveAt(0)
                     Command.Value.Invoke(Nothing, cargs.ToArray())
                     Return
                 Catch ex As Exception
                     If My.Settings.UseTechnicalNames Then
-                        Console.WriteLine("The Shell did not return a value, or the System Call could not be invoked.")
-                        Console.WriteLine("Error id: " + ex.InnerException.Message)
+                        Console.WriteLine("An exception has been thrown during the execution of the System Call.")
+                        Dim err = If(ex.InnerException IsNot Nothing, ex.InnerException, ex)
+                        Console.WriteLine("Error class: " + err.GetType().AssemblyQualifiedName)
+                        Console.WriteLine("Error id: " + err.GetHashCode().ToString())
+                        Console.WriteLine("Error message: " + err.Message)
+                        Console.WriteLine("Error stack: " + vbCrLf + err.StackTrace)
+                        Console.WriteLine("End of Error description. Test environment can't be warned.")
                     Else
                         Console.WriteLine("The invocation of the command raised an error. Ask a minister.")
                     End If
-                    Debug.Fail(ex.Source, ex.Message)
-                    Debug.Assert(False)
                 End Try
             End If
         Next
     End Sub
+
+    <SystemCall("Test connections")>
+    Sub Connect()
+        Dim w As ClientWebSocket = New ClientWebSocket()
+        w.ConnectAsync(New Uri("ws://127.0.0.1:8181/example"), Nothing).Wait()
+        w.SendAsync(New ArraySegment(Of Byte)({50, 25, 11}), WebSocketMessageType.Text, True, Nothing).Wait()
+        w.CloseAsync(WebSocketCloseStatus.NormalClosure, "OK", Nothing).Wait()
+    End Sub
+
+    Public Property Interactive As Boolean = False
 
     Sub Main(args As String())
         Dim commandBuffer As String = ""
@@ -96,6 +121,7 @@ Module Program
         ImportModule("sccommand.Reflection")
         ImportModule("sccommand.RootCommands")
         ImportModule("sccommand.HumanUnitManagement")
+        ImportModule("sccommand.ContextManagement")
 #If SECRET Then
         ImportModule("sccommand.Secret")
         Secret.DidImport()
@@ -115,6 +141,8 @@ Module Program
                     Case "/F"
                         RunScript(args(Array.IndexOf(args, arg) + 1))
                         Return
+                    Case "/I"
+                        Interactive = True
                     Case "/K"
                         RunScript(args(Array.IndexOf(args, arg) + 1))
                 End Select
@@ -127,6 +155,7 @@ Module Program
 
         If commandBuffer = "" Then
             While commandBuffer <> "Exit"
+                Console.Write(PROMPT.Replace("%pwd", MyHero.IO.Directory.GetCurrentDirectory()))
                 commandBuffer = Console.ReadLine()
                 Invoke(commandBuffer)
             End While
@@ -140,12 +169,28 @@ Module Program
         VWrite(commandBuffer)
     End Sub
 
+    <SystemCall("Design human unit")>
+    Sub hustart()
+        HumanUnitDesigner.HumanUnitDesigner()
+    End Sub
+
     Sub CheckIdoneity(command As MethodInfo)
         Dim requirityAttribute = command.GetCustomAttribute(Of RequiresSCA)
         If requirityAttribute IsNot Nothing Then
             If Not SCA > requirityAttribute.RequiredSCA Then
                 Throw New UnauthorizedAccessException("You are not authorized to perform this command. Required SCA is " + requirityAttribute.RequiredSCA.ToString())
             End If
+        End If
+        Dim contextRequirityAttribute = command.GetCustomAttribute(Of RequiresContext)
+        If contextRequirityAttribute IsNot Nothing Then
+            Dim success = False
+            For Each context In Contexts
+                If context.GetType().Name = contextRequirityAttribute.RequiredContext Then
+                    success = True
+                    Exit For
+                End If
+            Next
+            If Not success Then Throw New TargetException("You are not member of the required Context " + contextRequirityAttribute.RequiredContext)
         End If
     End Sub
 
@@ -234,7 +279,7 @@ Module Program
             Case "thermal"
                 Dim luminous As MyHero.Windows.Forms.Form = New Windows.Forms.Form()
                 luminous.SetDesktopBounds(My.Computer.Screen.Bounds.X, My.Computer.Screen.Bounds.Y, My.Computer.Screen.Bounds.Width, My.Computer.Screen.Bounds.Height)
-    If IO.Directory.Exists("C:\WINDOWS\Overworld\ThermalElements") Then
+                If IO.Directory.Exists("C:\WINDOWS\Overworld\ThermalElements") Then
                     luminous.BackgroundImage = New Drawing.Bitmap(IO.Directory.GetFiles("C:\WINDOWS\Overworld\ThermalElements\" + shape + ".pd\")(0))
                 Else
                     luminous.BackColor = Drawing.Color.LightGoldenrodYellow
